@@ -1,0 +1,1 @@
+rozwiazanie zaad 5: maxDescendantsExceptPID
