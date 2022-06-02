@@ -20,3 +20,5 @@ Każdy proces posiada pole p_group, które informuje do jakiej grupy nalezy proc
 Odpowiedni kwant czasu jest zagwarantowany poprzez modyfikacje funkcji `do_clocktick()`. Zmiennej `sched_tick` jest przypisywany odpowiedni kwant czasu dla procesu z danej grupy.
 
 # Testy
+
+Przykładowo: nadanie A 2 kawnty, B 4 kwanty, C 6 kwantów. Stworznie procesów i nadanie im odpowiednich grup. Proporcja czasów powinna wyjść 1:2:3.
