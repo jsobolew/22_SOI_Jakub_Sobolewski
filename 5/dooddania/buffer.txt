@@ -1,0 +1,100 @@
+const N = 9;
+const MIN_ELEM_FROM_CONSUMPTION = 3;
+
+
+server SemN {
+    var value: 0..N;
+    { v | value < N } -> { value = value + 1; return :ok; }
+    { v | value == N } -> { return :ok; }
+    { p | value > 0 } -> { value = value - 1; return :ok; }
+}
+
+server SemBin {
+    var state : {up, down};
+
+    { p | state = :up } -> {state = :down;  return :ok; }
+    { v } -> {state = :up;  return :ok;}
+}
+
+
+
+server Buffer {
+    var values: 0..N;
+
+    { aboveMinElem | values > MIN_ELEM_FROM_CONSUMPTION } -> { return :true; }
+    { aboveMinElem | values <= MIN_ELEM_FROM_CONSUMPTION } -> { return :false; }
+
+    { put | values < N } -> { values = values + 1; return :ok; }
+
+    { remove | values > 0 } -> { values = values - 1; return :ok; }
+}
+
+
+var buffer = Buffer() { values = 0 };
+
+
+var mutex = SemBin () { state = :up };
+var semA = SemN() { value = 0 };
+var semB = SemN() { value = 0 };
+
+var full = SemN() { value = N };
+var empty = SemN() { value = 0 };
+
+
+thread producerA() {
+    loop {
+        full.p();
+        mutex.p();
+        buffer.put();
+        match buffer.aboveMinElem() {
+            :true => {
+                empty.v();
+            }
+            :false => {}
+        }
+        semA.v();
+        mutex.v();
+    }
+}
+
+thread producerB() {
+    loop {
+        full.p();
+        mutex.p();
+        buffer.put();
+        match buffer.aboveMinElem() {
+            :true => {
+                empty.v();
+            }
+            :false => {}
+        }
+        semB.v();
+        mutex.v();
+    }
+}
+
+thread consumeA() {
+    loop {
+		semA.p();
+		empty.p();
+		mutex.p();
+    
+        buffer.remove();
+        full.v();
+
+        mutex.v();
+    }
+}
+
+thread consumeB() {
+    loop {
+		semB.p();
+		empty.p();
+		mutex.p();
+    
+        buffer.remove();
+        full.v();
+
+        mutex.v();
+    }
+}
